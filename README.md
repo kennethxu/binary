@@ -4,6 +4,10 @@ This is the binary build of MvvmCross from https://github.com/kennethxu/MvvmCros
 Only Portable, MonoTouch, MonoDroid and WindowsPhone libraries are built here. For other platform,
 check out https://github.com/slodge/MvvmCross-Binaries.
 
+The layout of the folder is slightly different from those in https://github.com/slodge/MvvmCross-Binaries.
+There are Profile1 and Profile104 sub folders under Portable, this is to facilitate the Xamarin that
+only understood Profile1.
+
 This one set of libraries can compile and run all tutorial applications starts with "Sample - " 
 from https://github.com/kennethxu/MvvmCross-Tutorials. Tested to work with both Xamarin Studio 
 (Mac and PC) and Xamarin for Visual Studio.
