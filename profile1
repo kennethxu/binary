@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+# This script prepares the VS Portable Class Lib projects, as well as MonoTouch 
+# projects referencing to Portable Class Lib to build in Xamarin/Mac. And also
+# can remove the changes made to those project files.
+# 
+
+function enableProfile() {
+  NO_CHANGE=true;
+  grep -e '<TargetFrameworkProfile>Profile1' -e '<HintPath>.*\\Portable\\' -e '^</Project>' "$1" | sed 's/\\/\//g' | \
+  while read i; do
+    case "$i" in
+      *TargetFrameworkProfile*)
+        echo /TargetFrameworkProfile/c
+        echo "    <TargetFrameworkProfile Condition=\"'\$(OS)' != 'Windows_NT'\">Profile1</TargetFrameworkProfile>"
+        echo "    <TargetFrameworkProfile Condition=\"'\$(OS)' == 'Windows_NT'\">Profile104</TargetFrameworkProfile>"
+        echo .
+        NO_CHANGE=false;
+        ;;
+      *HintPath*)
+        FULL_PATH=`echo "$i" | sed -e 's/[ 	]*<HintPath>//' -e 's%</HintPath>.*$%%'`
+        PATH_NAME=`dirname $FULL_PATH | sed 's%/%\\\\%g'`
+        FILE_NAME=`basename $FULL_PATH`
+        echo "/HintPath.*$FILE_NAME/c"
+        echo "      <HintPath Condition=\"'\$(OS)' != 'Windows_NT'\">$PATH_NAME\\Profile1\\$FILE_NAME</HintPath>"
+        echo "      <HintPath Condition=\"'\$(OS)' == 'Windows_NT'\">$PATH_NAME\\$FILE_NAME</HintPath>"
+        echo .
+        NO_CHANGE=false;
+        ;;
+      *)
+        $NO_CHANGE || echo w
+        echo Q
+        ;;
+    esac;
+  done | ed - -s "$1"
+}
+
+function disableProfile() {
+if grep -q "Condition=\"'\$(OS)' != 'Windows_NT'\"" $1; then
+ed - -s "$1" <<EOF!
+g/Condition="'\$(OS)' != 'Windows_NT'"/d
+g/ Condition="'\$(OS)' == 'Windows_NT'"/s///
+w
+Q
+EOF!
+fi
+}
+
+if [ $# -lt 2 -o "$1" != + -a "$1" != - ]; then
+  echo "Usage: $0 +|- project_file ..." >&2
+  exit 1;
+fi
+
+OPTION=$1
+shift
+
+while [ $# -gt 0 ]; do
+  case $OPTION in
+    +) enableProfile $1;;
+    -) disableProfile $1;;
+  esac
+  shift
+done
